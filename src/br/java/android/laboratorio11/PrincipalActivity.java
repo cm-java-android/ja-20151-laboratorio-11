@@ -1,16 +1,84 @@
 package br.java.android.laboratorio11;
 
 import android.app.Activity;
+import android.app.Service;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.TextView;
 
 public class PrincipalActivity extends Activity {
-
+	
+	private EditText minimoEditText;
+	private EditText maximoEditText;
+	private TextView numeroGeradoTextView;
+	private NumeroAleatorioSevice servico;
+	
+	// Para criar uma conexao com o Serviço, 
+	// eu preciso do atributo ServiceConection
+	private ServiceConnection conexao;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_principal);
+		
+		minimoEditText = (EditText) findViewById(R.id.numMinimoEditText);
+		maximoEditText = (EditText) findViewById(R.id.numMaximoEditText);
+		numeroGeradoTextView = (TextView) findViewById(R.id.numeroGeradoTextView);
+		
+		
+		findViewById(R.id.gerarButton)
+								.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View vParam) {
+				obtemNumeroAleatorio();
+				
+			}
+		});
+		
+		// Agora preciso me conectar com o meu serviço
+		conexao = new ServiceConnection() {
+			
+			@Override
+			public void onServiceDisconnected(ComponentName nameParam) {
+				servico = null;
+				Log.d("Laboratorio11", "Desconectado!!");
+			}
+			
+			@Override
+			public void onServiceConnected(ComponentName nameParam,
+					IBinder serviceParam) {
+				Log.d("Laboratorio11", "Serviço Conectado!!");
+				// Eu preciso fazer um vinculo com o meu serviço
+				servico = ((NumeroAleatorioSevice.NumeroAleatorioBind) 
+						serviceParam).obtemServico();
+			}
+		};
+		
+		Intent servicoIntent = new Intent(this, NumeroAleatorioSevice.class);
+		bindService(servicoIntent, conexao, Service.BIND_AUTO_CREATE); 
+		// o Service.BIND_AUTO_CREATE é para criar o serviço, caso 
+		// ele não exista
+	}
+
+	protected void obtemNumeroAleatorio() {
+		
+		int minimo = Integer.parseInt(minimoEditText.getText().toString());
+		int maximo = Integer.parseInt(maximoEditText.getText().toString());
+		int aleatorio = servico.getNumeroAleatorio(minimo, maximo);
+		
+		numeroGeradoTextView.setText("Gerado: " + aleatorio);
+		
 	}
 
 	@Override
